@@ -6,11 +6,8 @@ import ofetch from '@/utils/ofetch';
 import * as cheerio from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import path from 'node:path';
-import { getCurrentPath } from '@/utils/helpers';
 import { art } from '@/utils/render';
 import { config } from '@/config';
-
-const __dirname = getCurrentPath(import.meta.url);
 
 export const route: Route = {
     path: '/:creator',
@@ -25,6 +22,7 @@ export const route: Route = {
                 description: 'The value of the session_id cookie after logging in to Patreon, required to access paid posts',
             },
         ],
+        nsfw: true,
     },
     radar: [
         {
@@ -50,7 +48,6 @@ async function handler(ctx) {
         const bootstrapEnvelope = nextData.props.pageProps.bootstrapEnvelope;
 
         return {
-            meta: bootstrapEnvelope.meta,
             id: bootstrapEnvelope.pageBootstrap.campaign.data.id,
             attributes: bootstrapEnvelope.pageBootstrap.campaign.data.attributes,
         };
@@ -98,7 +95,7 @@ async function handler(ctx) {
             }
         }
         if (attributes.video_preview) {
-            relationships.video_preview = posts.included.find((i) => Number.parseInt(i.id) === attributes.video_preview.media_id) as unknown as MediaRelation;
+            relationships.video_preview = posts.included.find((i) => Number.parseInt(i.id) === attributes.video_preview?.media_id) as unknown as MediaRelation;
         }
 
         return {
@@ -110,14 +107,14 @@ async function handler(ctx) {
             }),
             link: attributes.url,
             pubDate: parseDate(attributes.published_at),
-            image: attributes.thumbnail?.url ?? attributes.image.url,
+            image: attributes.thumbnail?.url ?? attributes.image?.url,
             category: relationships.user_defined_tags?.map((tag) => tag.attributes.value),
         };
     });
 
     return {
-        title: creatorData.meta.title,
-        description: creatorData.meta.desc,
+        title: creatorData.attributes.name,
+        description: creatorData.attributes.creation_name,
         link,
         image: creatorData.attributes.avatar_photo_url,
         item: items,
